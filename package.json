@@ -1,7 +1,7 @@
 {
   "name": "mcp-weather-streamable",
   "version": "1.0.0",
-  "description": "Serveur MCP météo streamable via HTTP basé sur l'API Open-Meteo",
+  "description": "Streamable HTTP MCP weather server based on Open-Meteo API",
   "type": "module",
   "main": "build/index.js",
   "bin": {
@@ -36,6 +36,6 @@
     "open-meteo",
     "api"
   ],
-  "author": "Votre nom",
+  "author": "Your name",
   "license": "MIT"
 }

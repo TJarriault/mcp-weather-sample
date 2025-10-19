@@ -6,7 +6,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import axios from 'axios';
-// Serveur MCP
+// MCP Server
 function createMCPServer() {
     const server = new McpServer({
         name: 'weather-mcp-server',
@@ -17,7 +17,7 @@ function createMCPServer() {
             logging: {}
         },
     });
-    // Tool pour obtenir la météo
+    // Tool to get weather data
     server.tool('get_weather', 'Get current weather information for a location', {
         latitude: z.number().describe('Latitude of the location'),
         longitude: z.number().describe('Longitude of the location'),
@@ -52,7 +52,7 @@ function createMCPServer() {
             };
         }
     });
-    // Tool pour streamer la météo
+    // Tool to stream weather data
     server.tool('stream_weather', 'Stream weather updates for a location with periodic updates', {
         latitude: z.number().describe('Latitude of the location'),
         longitude: z.number().describe('Longitude of the location'),
@@ -69,14 +69,14 @@ function createMCPServer() {
             ]
         };
     });
-    // Tool pour rechercher la position GPS d'une ville
+    // Tool to search for GPS position of a city
     server.tool('search_location', 'Search for GPS coordinates of a city or location by name', {
         city_name: z.string().describe('Name of the city or location to search for'),
         country: z.string().optional().describe('Optional country name to narrow the search'),
         limit: z.number().min(1).max(10).default(5).describe('Maximum number of results to return (default: 5)')
     }, async ({ city_name, country, limit }) => {
         try {
-            // Construire l'URL de recherche avec l'API de géocodage Open-Meteo
+            // Build search URL with Open-Meteo geocoding API
             const searchParams = new URLSearchParams({
                 name: city_name,
                 count: limit.toString(),
@@ -93,12 +93,12 @@ function createMCPServer() {
                     content: [
                         {
                             type: 'text',
-                            text: `Aucune localisation trouvée pour "${city_name}"${country ? ` dans ${country}` : ''}`
+                            text: `No location found for "${city_name}"${country ? ` in ${country}` : ''}`
                         }
                     ]
                 };
             }
-            // Formater les résultats
+            // Format results
             const locations = results.map((result) => ({
                 name: result.name,
                 country: result.country,
@@ -137,27 +137,27 @@ function createMCPServer() {
     });
     return server;
 }
-// Configuration Express
+// Express Configuration
 const app = express();
 app.use(express.json());
 app.use(cors({
     origin: '*',
     exposedHeaders: ['Mcp-Session-Id']
 }));
-// Stockage des transports par ID de session
+// Storage for transports by session ID
 const transports = {};
-// Endpoint principal MCP
+// Main MCP endpoint
 app.all('/mcp', async (req, res) => {
     console.log(`Received ${req.method} request to /mcp`);
     try {
         const sessionId = req.headers['mcp-session-id'];
         let transport;
         if (sessionId && transports[sessionId]) {
-            // Réutiliser le transport existant
+            // Reuse existing transport
             transport = transports[sessionId];
         }
         else if (!sessionId && isInitializeRequest(req.body)) {
-            // Nouvelle demande d'initialisation
+            // New initialization request
             transport = new StreamableHTTPServerTransport({
                 sessionIdGenerator: () => randomUUID(),
                 onsessioninitialized: (sessionId) => {
@@ -165,7 +165,7 @@ app.all('/mcp', async (req, res) => {
                     transports[sessionId] = transport;
                 }
             });
-            // Configuration du cleanup
+            // Cleanup configuration
             transport.onclose = () => {
                 const sid = transport.sessionId;
                 if (sid && transports[sid]) {
@@ -173,12 +173,12 @@ app.all('/mcp', async (req, res) => {
                     delete transports[sid];
                 }
             };
-            // Connexion du serveur MCP
+            // Connect MCP server
             const mcpServer = createMCPServer();
             await mcpServer.connect(transport);
         }
         else {
-            // Requête invalide
+            // Invalid request
             res.status(400).json({
                 jsonrpc: '2.0',
                 error: {
@@ -189,7 +189,7 @@ app.all('/mcp', async (req, res) => {
             });
             return;
         }
-        // Gérer la requête avec le transport
+        // Handle request with transport
         await transport.handleRequest(req, res, req.body);
     }
     catch (error) {
@@ -206,11 +206,11 @@ app.all('/mcp', async (req, res) => {
         }
     }
 });
-// Route de santé
+// Health route
 app.get('/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
-// Démarrage du serveur
+// Server startup
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, (error) => {
     if (error) {
@@ -221,7 +221,7 @@ app.listen(PORT, (error) => {
     console.log(`Health check: http://localhost:${PORT}/health`);
     console.log(`MCP endpoint: http://localhost:${PORT}/mcp`);
 });
-// Gestion de l'arrêt gracieux
+// Graceful shutdown handling
 process.on('SIGINT', async () => {
     console.log('Shutting down server...');
     process.exit(0);
