@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 async function testLocalCitiesSearch() {
-    const baseUrl = 'http://localhost:3001/mcp';
+    const baseUrl = 'http://localhost:8080/mcp';
     let sessionId = null;
 
     try {
@@ -129,5 +129,5 @@ async function testLocalCitiesSearch() {
 
 // Lancement des tests
 console.log('🧪 Test de la fonctionnalité de recherche dans les villes locales');
-console.log('⚠️  Assurez-vous que le serveur MCP est démarré sur le port 3001');
+console.log('⚠️  Assurez-vous que le serveur MCP est démarré sur le port 8080');
 testLocalCitiesSearch();

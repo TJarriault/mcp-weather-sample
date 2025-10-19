@@ -14,7 +14,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Variables
-SERVER_URL="http://localhost:3001"
+SERVER_URL="http://localhost:8080"
 MCP_ENDPOINT="$SERVER_URL/mcp"
 HEALTH_ENDPOINT="$SERVER_URL/health"
 

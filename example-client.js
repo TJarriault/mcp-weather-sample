@@ -159,7 +159,7 @@ Ce script va tester:
   - L'outil stream_weather
 
 Example de démarrage du serveur:
-  cd /appli/sogeti/devfest-mcp-a2a/mcp-weather
+  cd %HOME/mcp-weather
   PORT=8080 npm start
 `);
 }

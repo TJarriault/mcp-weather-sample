@@ -39,7 +39,7 @@ La configuration HTTP (`claude_config_http.json`) permet à Claude Desktop de se
 ```json
 "transport": {
   "type": "http",
-  "url": "http://localhost:3001/mcp",
+  "url": "http://localhost:8080/mcp",
   "headers": {
     "Content-Type": "application/json",
     "Accept": "application/json, text/event-stream"
@@ -50,7 +50,7 @@ La configuration HTTP (`claude_config_http.json`) permet à Claude Desktop de se
 #### Détails :
 - **`type: "http"`** : Spécifie l'utilisation du transport HTTP
 - **`url`** : Point d'entrée de votre serveur MCP
-  - `localhost:3001` : Adresse et port du serveur
+  - `localhost:8080` : Adresse et port du serveur
   - `/mcp` : Endpoint MCP configuré dans Express
 - **`headers`** : Headers HTTP requis
   - `Content-Type: application/json` : Format des données envoyées
@@ -140,13 +140,13 @@ Chaque outil est décrit avec ses paramètres :
 Le serveur doit être démarré **avant** Claude Desktop :
 
 ```bash
-cd /appli/sogeti/devfest-mcp-a2a/mcp-weather-sample
+cd mcp-weather-sample
 npm start
 ```
 
 Vérifiez que le serveur fonctionne :
 ```bash
-curl http://localhost:3001/health
+curl http://localhost:8080/health
 # Réponse attendue : {"status":"OK","timestamp":"..."}
 ```
 
@@ -173,8 +173,8 @@ Si votre serveur fonctionne sur un autre port ou une autre machine :
 ```
 
 Exemples :
-- Serveur local sur port 3002 : `"http://localhost:3002/mcp"`
-- Serveur distant : `"http://192.168.1.100:3001/mcp"`
+- Serveur local sur port 8080 : `"http://localhost:8080/mcp"`
+- Serveur distant : `"http://192.168.1.100:8080/mcp"`
 - Serveur avec domaine : `"https://weather-mcp.mondomaine.com/mcp"`
 
 ### Étape 4 : Redémarrer Claude Desktop
@@ -224,7 +224,7 @@ Error: connect ECONNREFUSED
 **Solutions :**
 1. Vérifiez que le serveur MCP est démarré
 2. Vérifiez l'URL dans la configuration
-3. Testez manuellement : `curl http://localhost:3001/health`
+3. Testez manuellement : `curl http://localhost:8080/health`
 
 ### Timeout
 ```

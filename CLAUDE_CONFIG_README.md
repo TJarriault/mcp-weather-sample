@@ -12,7 +12,7 @@ Configuration minimale pour Claude Desktop en mode local :
     "weather-mcp-server": {
       "command": "node",
       "args": ["build/index.js"],
-      "cwd": "/appli/sogeti/devfest-mcp-a2a/mcp-weather-sample",
+      "cwd": "%HOME/mcp-weather-sample",
       "env": {
         "PORT": "8080"
       }

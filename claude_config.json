@@ -3,9 +3,9 @@
     "weather-mcp-server": {
       "command": "node",
       "args": ["build/index.js"],
-      "cwd": "/appli/sogeti/devfest-mcp-a2a/mcp-weather-sample",
+      "cwd": "%HOME/mcp-weather-sample",
       "env": {
-        "PORT": "3001"
+        "PORT": "8080"
       }
     }
   }

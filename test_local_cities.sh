@@ -13,7 +13,7 @@ echo "⏳ Attente du démarrage du serveur..."
 sleep 3
 
 # Vérifier que le serveur est démarré
-if curl -s http://localhost:3001/health > /dev/null; then
+if curl -s http://localhost:8080/health > /dev/null; then
     echo "✅ Serveur démarré avec succès"
     
     # Exécuter les tests

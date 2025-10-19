@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const baseUrl = 'http://localhost:3002/mcp';
+const baseUrl = 'http://localhost:8080/mcp';
 let sessionId = null;
 
 async function initializeSession() {

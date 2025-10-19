@@ -51,7 +51,7 @@ cat > "$CONFIG_DIR/claude_desktop_config.json" << EOF
       "args": ["build/index.js"],
       "cwd": "$CURRENT_DIR",
       "env": {
-        "PORT": "3001"
+        "PORT": "8080"
       }
     }
   }
@@ -76,7 +76,7 @@ After=network.target
 Type=simple
 User=$USER
 WorkingDirectory=$CURRENT_DIR
-Environment=PORT=3001
+Environment=PORT=8080
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/node build/index.js
 Restart=always
@@ -102,9 +102,9 @@ echo
 echo -e "${YELLOW}📋 Informations importantes:${NC}"
 echo "• Configuration Claude: $CLAUDE_CONFIG"
 echo "• Répertoire du projet: $CURRENT_DIR"
-echo "• Port du serveur: 3001"
-echo "• Health check: http://localhost:3001/health"
-echo "• Endpoint MCP: http://localhost:3001/mcp"
+echo "• Port du serveur: 8080"
+echo "• Health check: http://localhost:8080/health"
+echo "• Endpoint MCP: http://localhost:8080/mcp"
 echo
 echo -e "${YELLOW}🔧 Outils disponibles:${NC}"
 echo "• get_weather: Obtenir la météo pour des coordonnées"

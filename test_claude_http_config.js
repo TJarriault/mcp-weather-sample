@@ -6,7 +6,7 @@ import axios from 'axios';
  * qu'ils fonctionnent correctement avec la configuration Claude.
  */
 
-const MCP_URL = 'http://localhost:3001/mcp';
+const MCP_URL = 'http://localhost:8080/mcp';
 
 class MCPHTTPTester {
     constructor() {
@@ -169,7 +169,7 @@ class MCPHTTPTester {
         console.log('\n🏥 Test de santé du serveur...');
         
         try {
-            const response = await axios.get('http://localhost:3001/health');
+            const response = await axios.get('http://localhost:8080/health');
             console.log(`  ✅ Serveur en bonne santé: ${response.data.status}`);
             return true;
         } catch (error) {
