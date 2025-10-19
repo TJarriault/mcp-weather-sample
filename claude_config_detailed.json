@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schemas.anthropic.com/claude-desktop/1.0.0/config.json",
+  "mcpServers": {
+    "weather-mcp-server": {
+      "description": "Serveur MCP pour la météo avec recherche de villes locales",
+      "command": "node",
+      "args": ["build/index.js"],
+      "cwd": "/appli/sogeti/devfest-mcp-a2a/mcp-weather-sample",
+      "env": {
+        "PORT": "3001",
+        "NODE_ENV": "production"
+      },
+      "capabilities": [
+        "tools"
+      ],
+      "tools": [
+        {
+          "name": "get_weather",
+          "description": "Obtenir les informations météo actuelles pour une localisation"
+        },
+        {
+          "name": "search_location", 
+          "description": "Rechercher les coordonnées GPS d'une ville par nom via l'API Open-Meteo"
+        },
+        {
+          "name": "search_local_cities",
+          "description": "Rechercher des villes dans les fichiers CSV locaux du répertoire static"
+        },
+        {
+          "name": "stream_weather",
+          "description": "Diffuser les mises à jour météo en temps réel pour une localisation"
+        }
+      ],
+      "timeout": 30000,
+      "retries": 3
+    }
+  },
+  "logging": {
+    "level": "info",
+    "file": "claude-mcp.log"
+  }
+}

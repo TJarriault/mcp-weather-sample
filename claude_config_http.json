@@ -1,0 +1,98 @@
+{
+  "mcpServers": {
+    "weather-mcp-server-http": {
+      "description": "Serveur MCP météo accessible via HTTP",
+      "transport": {
+        "type": "http",
+        "url": "http://localhost:3001/mcp",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json, text/event-stream"
+        }
+      },
+      "capabilities": [
+        "tools"
+      ],
+      "tools": [
+        {
+          "name": "get_weather",
+          "description": "Obtenir la météo actuelle pour des coordonnées GPS",
+          "parameters": {
+            "latitude": {
+              "type": "number",
+              "description": "Latitude du lieu"
+            },
+            "longitude": {
+              "type": "number", 
+              "description": "Longitude du lieu"
+            },
+            "location_name": {
+              "type": "string",
+              "description": "Nom optionnel du lieu pour l'affichage"
+            }
+          }
+        },
+        {
+          "name": "search_location",
+          "description": "Rechercher les coordonnées GPS d'une ville",
+          "parameters": {
+            "city_name": {
+              "type": "string",
+              "description": "Nom de la ville à rechercher"
+            },
+            "country": {
+              "type": "string",
+              "description": "Pays optionnel pour affiner la recherche"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Nombre maximum de résultats (défaut: 5)"
+            }
+          }
+        },
+        {
+          "name": "search_local_cities",
+          "description": "Rechercher dans les villes du fichier CSV local",
+          "parameters": {
+            "city_name": {
+              "type": "string",
+              "description": "Nom de la ville à rechercher (recherche partielle insensible à la casse)"
+            },
+            "exact_match": {
+              "type": "boolean",
+              "description": "Recherche exacte ou partielle (défaut: false)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Nombre maximum de résultats (défaut: 10)"
+            }
+          }
+        },
+        {
+          "name": "stream_weather",
+          "description": "Diffuser les mises à jour météo périodiques",
+          "parameters": {
+            "latitude": {
+              "type": "number",
+              "description": "Latitude du lieu"
+            },
+            "longitude": {
+              "type": "number",
+              "description": "Longitude du lieu"
+            },
+            "location_name": {
+              "type": "string",
+              "description": "Nom optionnel du lieu"
+            },
+            "interval_seconds": {
+              "type": "number",
+              "description": "Intervalle de mise à jour en secondes (défaut: 60)"
+            }
+          }
+        }
+      ],
+      "timeout": 30000,
+      "retries": 3
+    }
+  }
+}

@@ -6,6 +6,8 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import axios from 'axios';
+import { readFileSync, readdirSync } from 'fs';
+import { join, extname } from 'path';
 
 // Interfaces
 interface WeatherData {
@@ -25,6 +27,60 @@ interface WeatherData {
     is_day: string;
     time: string;
   };
+}
+
+interface CityData {
+  ville: string;
+  longitude: number;
+  latitude: number;
+}
+
+// Utility functions
+function parseCSV(csvContent: string): CityData[] {
+  const lines = csvContent.trim().split('\n');
+  const headers = lines[0].split(';');
+  
+  return lines.slice(1).map(line => {
+    const values = line.split(';');
+    const city: any = {};
+    
+    headers.forEach((header, index) => {
+      const value = values[index];
+      if (header === 'longitude' || header === 'latitude') {
+        city[header] = parseFloat(value);
+      } else {
+        city[header] = value;
+      }
+    });
+    
+    return city as CityData;
+  });
+}
+
+function loadCitiesFromStatic(): CityData[] {
+  const staticDir = join(process.cwd(), 'static');
+  const cities: CityData[] = [];
+  
+  try {
+    console.log('Loading cities from:', staticDir);
+    const files = readdirSync(staticDir);
+    const csvFiles = files.filter(file => extname(file).toLowerCase() === '.csv');
+    console.log('Found CSV files:', csvFiles);
+    
+    csvFiles.forEach(file => {
+      const filePath = join(staticDir, file);
+      console.log('Reading file:', filePath);
+      const content = readFileSync(filePath, 'utf-8');
+      const parsedCities = parseCSV(content);
+      console.log(`Loaded ${parsedCities.length} cities from ${file}`);
+      cities.push(...parsedCities);
+    });
+  } catch (error) {
+    console.error('Error loading cities from static directory:', error);
+  }
+  
+  console.log(`Total cities loaded: ${cities.length}`);
+  return cities;
 }
 
 // MCP Server
@@ -189,6 +245,93 @@ function createMCPServer() {
     }
   );
 
+  // Tool to search for cities in local CSV files
+  server.tool(
+    'search_local_cities',
+    'Search for cities in the local CSV files from the static directory',
+    {
+      city_name: z.string().describe('Name of the city to search for (case insensitive partial match)'),
+      exact_match: z.boolean().default(false).describe('Whether to search for exact match or partial match (default: false)'),
+      limit: z.number().min(1).max(50).default(10).describe('Maximum number of results to return (default: 10)')
+    },
+    async ({ city_name, exact_match, limit }) => {
+      try {
+        const cities = loadCitiesFromStatic();
+        
+        if (cities.length === 0) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'No cities found in local CSV files. Please check the static directory.'
+              }
+            ]
+          };
+        }
+
+        // Search logic
+        const searchTerm = city_name.toLowerCase().trim();
+        let filteredCities: CityData[];
+
+        if (exact_match) {
+          filteredCities = cities.filter(city => 
+            city.ville.toLowerCase() === searchTerm
+          );
+        } else {
+          filteredCities = cities.filter(city => 
+            city.ville.toLowerCase().includes(searchTerm)
+          );
+        }
+
+        // Limit results
+        const limitedResults = filteredCities.slice(0, limit);
+
+        if (limitedResults.length === 0) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `No cities found matching "${city_name}" in local CSV files.`
+              }
+            ]
+          };
+        }
+
+        // Format results
+        const results = {
+          query: city_name,
+          exact_match: exact_match,
+          total_found: filteredCities.length,
+          results_returned: limitedResults.length,
+          cities: limitedResults.map(city => ({
+            name: city.ville,
+            latitude: city.latitude,
+            longitude: city.longitude
+          }))
+        };
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(results, null, 2)
+            }
+          ]
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error searching local cities: ${error instanceof Error ? error.message : 'Unknown error'}`
+            }
+          ],
+          isError: true
+        };
+      }
+    }
+  );
+
   return server;
 }
 
@@ -272,7 +415,7 @@ app.get('/health', (req, res) => {
 });
 
 // Server startup
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, (error?: Error) => {
   if (error) {
     console.error('Failed to start server:', error);
