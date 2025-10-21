@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Script de test pour la fonction search_location
-echo "🔍 Test de la fonction search_location sur le serveur MCP"
+# Test script for search_location function
+echo "🔍 Testing search_location function on MCP server"
 echo "=================================================="
 
-# Vérifier que le serveur est accessible
-echo "1. Test de santé du serveur..."
+# Check server accessibility
+echo "1. Server health test..."
 curl -s http://localhost:8081/health | jq .
 echo ""
 
-# Test d'initialisation MCP
-echo "2. Initialisation MCP..."
+# MCP initialization test
+echo "2. MCP initialization..."
 INIT_RESPONSE=$(curl -s -X POST \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
@@ -26,15 +26,15 @@ INIT_RESPONSE=$(curl -s -X POST \
   }' \
   http://localhost:8081/mcp -D headers.tmp)
 
-# Extraire l'ID de session
+# Extract session ID
 SESSION_ID=$(grep -i "mcp-session-id" headers.tmp | cut -d: -f2 | tr -d ' \r\n')
 echo "Session ID: $SESSION_ID"
-echo "Réponse d'initialisation:"
+echo "Initialization response:"
 echo "$INIT_RESPONSE" | jq .
 echo ""
 
-# Lister les outils
-echo "3. Liste des outils disponibles..."
+# List tools
+echo "3. Available tools list..."
 TOOLS_RESPONSE=$(curl -s -X POST \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
@@ -47,12 +47,12 @@ TOOLS_RESPONSE=$(curl -s -X POST \
   }' \
   http://localhost:8081/mcp)
 
-echo "Outils disponibles:"
+echo "Available tools:"
 echo "$TOOLS_RESPONSE" | jq .
 echo ""
 
-# Test de search_location pour Paris
-echo "4. Test search_location pour Paris..."
+# Test search_location for Paris
+echo "4. Testing search_location for Paris..."
 PARIS_RESPONSE=$(curl -s -X POST \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
@@ -71,12 +71,12 @@ PARIS_RESPONSE=$(curl -s -X POST \
   }' \
   http://localhost:8081/mcp)
 
-echo "Résultats pour Paris:"
+echo "Results for Paris:"
 echo "$PARIS_RESPONSE" | jq .
 echo ""
 
-# Test de search_location pour Lyon avec filtre pays
-echo "5. Test search_location pour Lyon, France..."
+# Test search_location for Lyon with country filter
+echo "5. Testing search_location for Lyon, France..."
 LYON_RESPONSE=$(curl -s -X POST \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
@@ -96,11 +96,11 @@ LYON_RESPONSE=$(curl -s -X POST \
   }' \
   http://localhost:8081/mcp)
 
-echo "Résultats pour Lyon, France:"
+echo "Results for Lyon, France:"
 echo "$LYON_RESPONSE" | jq .
 echo ""
 
-# Nettoyer
+# Cleanup
 rm -f headers.tmp
 
-echo "✅ Tests terminés !"
+echo "✅ Tests completed!"
