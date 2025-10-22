@@ -2,11 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mcp-weather-app
+  namespace: weather
   labels:
     app: mcp-weather-app
     version: v1
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: mcp-weather-app
@@ -19,6 +20,7 @@ spec:
       containers:
       - name: mcp-weather-app
         image: mcp-weather-sample:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
           name: http

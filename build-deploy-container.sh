@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Build and deployment script for MCP Weather Sample
-# Usage: ./deploy.sh [build|deploy|all]
+# Usage: ./build-deploy-container.sh [build|deploy|all]
 
 set -e
 
@@ -41,6 +41,7 @@ build_image() {
     # Build the image
     docker build -t "${IMAGE_NAME}:${IMAGE_TAG}" .
     
+
     if [[ $? -eq 0 ]]; then
         log_info "Image built successfully: ${IMAGE_NAME}:${IMAGE_TAG}"
     else
@@ -53,29 +54,7 @@ build_image() {
 deploy_to_k8s() {
     log_info "Deploying to Kubernetes..."
     
-    # Check that kubectl is available
-    if ! command -v kubectl &> /dev/null; then
-        log_error "kubectl is not installed or not in PATH"
-        exit 1
-    fi
-    
-    # Check that cluster is accessible
-    if ! kubectl cluster-info &> /dev/null; then
-        log_error "Unable to connect to Kubernetes cluster"
-        exit 1
-    fi
-    
-    # Apply Kubernetes manifests
-    if [[ -f "k8s-all-in-one.yaml" ]]; then
-        log_info "Applying k8s-all-in-one.yaml manifest..."
-        kubectl apply -f k8s-all-in-one.yaml
-    elif [[ -d "k8s" ]]; then
-        log_info "Applying manifests from k8s/ directory..."
-        kubectl apply -f k8s/
-    else
-        log_error "No Kubernetes manifests found"
-        exit 1
-    fi
+    kubectl apply -f k8s/
     
     # Wait for deployment to be ready
     log_info "Waiting for deployment to be available..."
@@ -94,11 +73,8 @@ deploy_to_k8s() {
         # Instructions to access the service
         echo ""
         log_info "To access the service locally:"
-        echo "kubectl port-forward service/mcp-weather-service 8080:80"
+        echo "kubectl port-forward service/mcp-weather-service 8080:8080"
         echo "Then open: http://localhost:8080/health"
-        echo ""
-        log_info "To test the deployment:"
-        echo "./test/test-k8s-deployment.sh"
         
     else
         log_error "Deployment failed"
@@ -110,11 +86,7 @@ deploy_to_k8s() {
 cleanup() {
     log_info "Cleaning up deployment..."
     
-    if [[ -f "k8s-all-in-one.yaml" ]]; then
-        kubectl delete -f k8s-all-in-one.yaml --ignore-not-found=true
-    elif [[ -d "k8s" ]]; then
-        kubectl delete -f k8s/ --ignore-not-found=true
-    fi
+   kubectl delete -f k8s/ --ignore-not-found=true
     
     log_info "Cleanup completed"
 }

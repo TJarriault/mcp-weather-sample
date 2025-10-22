@@ -14,7 +14,7 @@ This guide explains how to containerize and deploy the MCP Weather Sample applic
 ```
 ├── Dockerfile                 # Optimized multi-stage Docker image
 ├── .dockerignore             # Files to exclude from Docker build
-├── deploy.sh                 # Automated build and deployment script
+├── build-deploy-container.sh                 # Automated build and deployment script
 ├── k8s-all-in-one.yaml      # Complete Kubernetes manifest
 └── k8s/                      # Separate Kubernetes manifests
     ├── configmap.yaml        # Application configuration
@@ -39,13 +39,20 @@ The application is configured for:
 
 ### Option 1: Automated Script (recommended)
 
+#### Requirement
+For minikube Deploy a local registry
+```bash
+docker run -d -p 5000:5000 --name registry registry:2
+```
+
+#### Build & Deploy
 ```bash
 # Complete build and deployment
-./deploy.sh all
+./build-deploy-container.sh all
 
 # Or separately
-./deploy.sh build
-./deploy.sh deploy
+./build-deploy-container.sh build
+./build-deploy-container.sh deploy
 ```
 
 ### Option 2: Manual Commands
@@ -107,10 +114,10 @@ curl -X POST http://localhost:8080/mcp \
 
 ```bash
 # Via script
-./deploy.sh cleanup
+./build-deploy-container.sh cleanup
 
 # Or manually
-kubectl delete -f k8s-all-in-one.yaml
+kubectl delete -f k8s/.
 ```
 
 ## Customization

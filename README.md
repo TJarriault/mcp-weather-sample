@@ -32,7 +32,7 @@ A streamable HTTP MCP (Model Context Protocol) server for getting weather data v
 │   └── ingress.yaml              # K8s ingress
 ├── Dockerfile                    # Multi-stage Docker build
 ├── k8s-all-in-one.yaml          # Complete K8s deployment
-├── deploy.sh                     # Automated deployment script
+├── build-deploy-container.sh                     # Automated deployment script
 └── KUBERNETES_DEPLOYMENT.md     # Kubernetes deployment guide
 ```
 
@@ -341,12 +341,12 @@ The application uses a **multi-stage Docker build** approach for optimal product
 #### Automated Build & Deployment
 ```bash
 # Complete build and deployment pipeline
-./deploy.sh all
+./build-deploy-container.sh all
 
 # Individual steps
-./deploy.sh build    # Build Docker image only
-./deploy.sh deploy   # Deploy to Kubernetes only
-./deploy.sh cleanup  # Remove deployment
+./build-deploy-container.sh build    # Build Docker image only
+./build-deploy-container.sh deploy   # Deploy to Kubernetes only
+./build-deploy-container.sh cleanup  # Remove deployment
 ```
 
 #### Manual Docker Operations
@@ -426,7 +426,7 @@ kubectl apply -f k8s/ingress.yaml
 #### Option 3: Automated Script
 ```bash
 # Use the provided deployment script
-./deploy.sh all
+./build-deploy-container.sh all
 
 # Script features:
 # - Validates kubectl connectivity
@@ -476,8 +476,13 @@ spec:
 ./test/test-k8s-deployment.sh
 
 # Manual health check via port-forward
-kubectl port-forward service/mcp-weather-service 8080:80
+kubectl port-forward service/mcp-weather-service 8080:8080
 curl http://localhost:8080/health
+
+# Debug
+kubectl exec -it pods/$(kubectl get pods  --no-headers -o custom-columns=":metadata.name" | grep 'flowise'|head -1) sh
+
+
 ```
 
 #### Comprehensive Testing
