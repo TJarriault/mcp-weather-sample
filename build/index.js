@@ -16,12 +16,13 @@ const CONFIG = {
         host: process.env.AUTH_HOST || process.env.HOST || "localhost",
         port: Number(process.env.AUTH_PORT) || 8080,
         realm: process.env.AUTH_REALM || "master",
+        protocol: process.env.AUTH_PROTOCOL || "https",
         clientId: process.env.OAUTH_CLIENT_ID || "mcp-server",
         clientSecret: process.env.OAUTH_CLIENT_SECRET || "",
     },
 };
 function createOAuthUrls() {
-    const authBaseUrl = new URL(`http://${CONFIG.auth.host}:${CONFIG.auth.port}/realms/${CONFIG.auth.realm}/`);
+    const authBaseUrl = new URL(`${CONFIG.auth.protocol}://${CONFIG.auth.host}:${CONFIG.auth.port}/realms/${CONFIG.auth.realm}/`);
     return {
         issuer: authBaseUrl.toString(),
         introspection_endpoint: new URL("protocol/openid-connect/token/introspect", authBaseUrl).toString(),
@@ -51,96 +52,106 @@ app.use(cors({
 }));
 app.use(createRequestLogger());
 const mcpServerUrl = new URL(`http://${CONFIG.host}:${CONFIG.port}`);
-const oauthUrls = createOAuthUrls();
-const oauthMetadata = {
-    ...oauthUrls,
-    response_types_supported: ["code"],
-};
-const tokenVerifier = {
-    verifyAccessToken: async (token) => {
-        const endpoint = oauthMetadata.introspection_endpoint;
-        if (!endpoint) {
-            console.error("[auth] no introspection endpoint in metadata");
-            throw new Error("No token verification endpoint available in metadata");
-        }
-        const params = new URLSearchParams({
-            token: token,
-            client_id: CONFIG.auth.clientId,
-        });
-        if (CONFIG.auth.clientSecret) {
-            params.set("client_secret", CONFIG.auth.clientSecret);
-        }
-        let response;
-        try {
-            response = await fetch(endpoint, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: params.toString(),
+const isAuthDisabled = process.env.DISABLE_AUTH === 'true';
+let authMiddleware;
+let oauthMetadata;
+if (!isAuthDisabled) {
+    const oauthUrls = createOAuthUrls();
+    oauthMetadata = {
+        ...oauthUrls,
+        response_types_supported: ["code"],
+    };
+    const tokenVerifier = {
+        verifyAccessToken: async (token) => {
+            const endpoint = oauthMetadata.introspection_endpoint;
+            if (!endpoint) {
+                console.error("[auth] no introspection endpoint in metadata");
+                throw new Error("No token verification endpoint available in metadata");
+            }
+            const params = new URLSearchParams({
+                token: token,
+                client_id: CONFIG.auth.clientId,
             });
-        }
-        catch (e) {
-            console.error("[auth] introspection fetch threw", e);
-            throw e;
-        }
-        if (!response.ok) {
-            const txt = await response.text();
-            console.error("[auth] introspection non-OK", { status: response.status });
+            if (CONFIG.auth.clientSecret) {
+                params.set("client_secret", CONFIG.auth.clientSecret);
+            }
+            let response;
             try {
-                const obj = JSON.parse(txt);
-                console.log(JSON.stringify(obj, null, 2));
+                response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                    body: params.toString(),
+                });
             }
-            catch {
-                console.error(txt);
+            catch (e) {
+                console.error("[auth] introspection fetch threw", e);
+                throw e;
             }
-            throw new Error(`Invalid or expired token: ${txt}`);
-        }
-        let data;
-        try {
-            data = await response.json();
-        }
-        catch (e) {
-            const txt = await response.text();
-            console.error("[auth] failed to parse introspection JSON", {
-                error: String(e),
-                body: txt,
-            });
-            throw e;
-        }
-        if (data.active === false) {
-            throw new Error("Inactive token");
-        }
-        if (!data.aud) {
-            throw new Error("Resource indicator (aud) missing");
-        }
-        const audiences = Array.isArray(data.aud) ? data.aud : [data.aud];
-        const allowed = audiences.some((a) => checkResourceAllowed({
-            requestedResource: a,
-            configuredResource: mcpServerUrl,
-        }));
-        if (!allowed) {
-            throw new Error(`None of the provided audiences are allowed. Expected ${mcpServerUrl}, got: ${audiences.join(", ")}`);
-        }
-        return {
-            token,
-            clientId: data.client_id,
-            scopes: data.scope ? data.scope.split(" ") : [],
-            expiresAt: data.exp,
-        };
-    },
-};
-app.use(mcpAuthMetadataRouter({
-    oauthMetadata,
-    resourceServerUrl: mcpServerUrl,
-    scopesSupported: ["mcp:tools"],
-    resourceName: "MCP Demo Server",
-}));
-const authMiddleware = requireBearerAuth({
-    verifier: tokenVerifier,
-    requiredScopes: [],
-    resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(mcpServerUrl),
-});
+            if (!response.ok) {
+                const txt = await response.text();
+                console.error("[auth] introspection non-OK", { status: response.status });
+                try {
+                    const obj = JSON.parse(txt);
+                    console.log(JSON.stringify(obj, null, 2));
+                }
+                catch {
+                    console.error(txt);
+                }
+                throw new Error(`Invalid or expired token: ${txt}`);
+            }
+            let data;
+            try {
+                data = await response.json();
+            }
+            catch (e) {
+                const txt = await response.text();
+                console.error("[auth] failed to parse introspection JSON", {
+                    error: String(e),
+                    body: txt,
+                });
+                throw e;
+            }
+            if (data.active === false) {
+                throw new Error("Inactive token");
+            }
+            if (!data.aud) {
+                throw new Error("Resource indicator (aud) missing");
+            }
+            const audiences = Array.isArray(data.aud) ? data.aud : [data.aud];
+            const allowed = audiences.some((a) => checkResourceAllowed({
+                requestedResource: a,
+                configuredResource: mcpServerUrl,
+            }));
+            if (!allowed) {
+                throw new Error(`None of the provided audiences are allowed. Expected ${mcpServerUrl}, got: ${audiences.join(", ")}`);
+            }
+            return {
+                token,
+                clientId: data.client_id,
+                scopes: data.scope ? data.scope.split(" ") : [],
+                expiresAt: data.exp,
+            };
+        },
+    };
+    app.use(mcpAuthMetadataRouter({
+        oauthMetadata,
+        resourceServerUrl: mcpServerUrl,
+        scopesSupported: ["mcp:tools"],
+        resourceName: "MCP Demo Server",
+    }));
+    authMiddleware = requireBearerAuth({
+        verifier: tokenVerifier,
+        requiredScopes: [],
+        resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(mcpServerUrl),
+    });
+}
+else {
+    console.log("🔓 Authentication disabled for development");
+    // No-op middleware when auth is disabled
+    authMiddleware = (req, res, next) => next();
+}
 const transports = {};
 function createMcpServer() {
     const server = new McpServer({

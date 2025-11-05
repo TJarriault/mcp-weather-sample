@@ -16,6 +16,7 @@ A streamable HTTP MCP (Model Context Protocol) server for getting weather data v
 ```
 ├── src/                           # Source code TypeScript
 ├── build/                         # Compiled JavaScript
+├── keycloak                       # Deploy keycloak IDP
 ├── static/                        # CSV city data files
 ├── test/                          # Test scripts and examples
 │   ├── test-k8s-deployment.sh     # Kubernetes deployment tests
@@ -37,6 +38,16 @@ A streamable HTTP MCP (Model Context Protocol) server for getting weather data v
 ```
 
 ## 📦 Installation
+# Keycloak installation
+
+```bash
+cd keycloak
+wget -q -O - https://raw.githubusercontent.com/keycloak/keycloak-quickstarts/refs/heads/main/kubernetes/keycloak-ingress.yaml | \
+sed "s/KEYCLOAK_HOST/keycloak.$(minikube ip).nip.io/" | \
+kubectl create -f -
+```
+
+# MCP deployment
 
 ```bash
 # Clone and install dependencies
