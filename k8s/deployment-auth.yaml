@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-weather-app-auth
+  namespace: weather
+  labels:
+    app: mcp-weather-app-auth
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-weather-app-auth
+  template:
+    metadata:
+      labels:
+        app: mcp-weather-app-auth
+        version: v1
+    spec:
+      containers:
+      - name: mcp-weather-app-auth
+        image: mcp-weather-sample-auth:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "8080"
+        - name: HOST
+          value: "0.0.0.0"
+        - name: AUTH_HOST
+          value: "keycloak.192.168.49.2.nip.io"
+        - name: AUTH_PORT
+          value: "443"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30

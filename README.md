@@ -64,7 +64,7 @@ npm start
 
 The server uses the following environment variables:
 
-- `PORT`: Listening port (default: 3000)
+- `PORT`: Listening port (default: 8080)
 
 Example:
 ```bash
@@ -349,7 +349,7 @@ The application uses a **multi-stage Docker build** approach for optimal product
 
 ### 🏗️ Docker Build Process
 
-#### Automated Build & Deployment
+#### Automated Build & Deployment (MCP WITHOUT AUTH)
 ```bash
 # Complete build and deployment pipeline
 ./build-deploy-container.sh all
@@ -358,6 +358,17 @@ The application uses a **multi-stage Docker build** approach for optimal product
 ./build-deploy-container.sh build    # Build Docker image only
 ./build-deploy-container.sh deploy   # Deploy to Kubernetes only
 ./build-deploy-container.sh cleanup  # Remove deployment
+```
+
+#### Automated Build & Deployment (MCP WITH AUTH)
+```bash
+# Complete build and deployment pipeline
+./build-deploy-container-auth.sh all
+
+# Individual steps
+./build-deploy-container-auth.sh build    # Build Docker image only
+./build-deploy-container-auth.sh deploy   # Deploy to Kubernetes only
+./build-deploy-container-auth.sh cleanup  # Remove deployment
 ```
 
 #### Manual Docker Operations
