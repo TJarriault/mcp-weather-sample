@@ -32,10 +32,16 @@ spec:
           value: "8080"
         - name: HOST
           value: "0.0.0.0"
+        - name: PUBLIC_URL
+          value: "https://weather-auth.192.168.49.2.nip.io"
         - name: AUTH_HOST
           value: "keycloak.192.168.49.2.nip.io"
         - name: AUTH_PORT
           value: "443"
+        - name: OAUTH_CLIENT_ID
+          value: "mcpweather-client"
+        - name: OAUTH_CLIENT_SECRET
+          value: "HFLjyBhlfn2WgQZWVBZ5ASItetLL04iW"
         resources:
           requests:
             memory: "128Mi"

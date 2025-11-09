@@ -14,6 +14,7 @@ import { checkResourceAllowed } from "@modelcontextprotocol/sdk/shared/auth-util
 const CONFIG = {
   host: process.env.HOST || "localhost",
   port: Number(process.env.PORT) || 3000,
+  publicUrl: process.env.PUBLIC_URL || `http://${process.env.HOST || "localhost"}:${Number(process.env.PORT) || 3000}`,
   auth: {
     host: process.env.AUTH_HOST || process.env.HOST || "localhost",
     port: Number(process.env.AUTH_PORT) || 8080,
@@ -59,7 +60,7 @@ app.use(cors({
 
 app.use(createRequestLogger());
 
-const mcpServerUrl = new URL(`http://${CONFIG.host}:${CONFIG.port}`);
+const mcpServerUrl = new URL(CONFIG.publicUrl);
 const oauthUrls = createOAuthUrls();
 
 const oauthMetadata: OAuthMetadata = {
@@ -69,6 +70,9 @@ const oauthMetadata: OAuthMetadata = {
 
 const tokenVerifier = {
   verifyAccessToken: async (token: string) => {
+    console.log('[auth] Starting token verification process');
+    console.log('[auth] Token received:', token ? `${token.substring(0, 20)}...` : 'null/empty');
+    
     const endpoint = oauthMetadata.introspection_endpoint;
 
     if (!endpoint) {
@@ -76,13 +80,18 @@ const tokenVerifier = {
       throw new Error('No token verification endpoint available in metadata');
     }
 
+    console.log('[auth] Using introspection endpoint:', endpoint);
+
     const params = new URLSearchParams({
       token: token,
       client_id: CONFIG.auth.clientId,
     });
     
+    console.log('[auth] Using client_id:', CONFIG.auth.clientId);
+    
     if (CONFIG.auth.clientSecret) {
       params.set('client_secret', CONFIG.auth.clientSecret);
+      console.log('[auth] Client secret provided');
     }
     
 
@@ -116,6 +125,7 @@ const tokenVerifier = {
     let data: any;
     try {
       data = await response.json();
+      console.log('[auth] introspection response:', JSON.stringify(data, null, 2));
     } catch (e) {
       const txt = await response.text();
       console.error('[auth] failed to parse introspection JSON', { error: String(e), body: txt });

@@ -12,6 +12,7 @@ import { checkResourceAllowed } from "@modelcontextprotocol/sdk/shared/auth-util
 const CONFIG = {
     host: process.env.HOST || "localhost",
     port: Number(process.env.PORT) || 3000,
+    publicUrl: process.env.PUBLIC_URL || `http://${process.env.HOST || "localhost"}:${Number(process.env.PORT) || 3000}`,
     auth: {
         host: process.env.AUTH_HOST || process.env.HOST || "localhost",
         port: Number(process.env.AUTH_PORT) || 8080,
@@ -50,7 +51,7 @@ app.use(cors({
     exposedHeaders: ['Mcp-Session-Id'],
 }));
 app.use(createRequestLogger());
-const mcpServerUrl = new URL(`http://${CONFIG.host}:${CONFIG.port}`);
+const mcpServerUrl = new URL(CONFIG.publicUrl);
 const oauthUrls = createOAuthUrls();
 const oauthMetadata = {
     ...oauthUrls,
@@ -58,17 +59,22 @@ const oauthMetadata = {
 };
 const tokenVerifier = {
     verifyAccessToken: async (token) => {
+        console.log('[auth] Starting token verification process');
+        console.log('[auth] Token received:', token ? `${token.substring(0, 20)}...` : 'null/empty');
         const endpoint = oauthMetadata.introspection_endpoint;
         if (!endpoint) {
             console.error('[auth] no introspection endpoint in metadata');
             throw new Error('No token verification endpoint available in metadata');
         }
+        console.log('[auth] Using introspection endpoint:', endpoint);
         const params = new URLSearchParams({
             token: token,
             client_id: CONFIG.auth.clientId,
         });
+        console.log('[auth] Using client_id:', CONFIG.auth.clientId);
         if (CONFIG.auth.clientSecret) {
             params.set('client_secret', CONFIG.auth.clientSecret);
+            console.log('[auth] Client secret provided');
         }
         let response;
         try {

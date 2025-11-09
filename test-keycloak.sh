@@ -23,6 +23,6 @@ echo "Step 2"
 
 curl -H "Authorization: Bearer $TOKEN" \
      -H "Content-Type: application/json" \
-     https://weath-auth.192.168.49.2.nip.io/ -k
+     https://weather-auth.192.168.49.2.nip.io/ -k
 
 

@@ -54,6 +54,7 @@ EXPOSE 8080
 # Environment variables
 ENV NODE_ENV=production
 ENV PORT=8080
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
