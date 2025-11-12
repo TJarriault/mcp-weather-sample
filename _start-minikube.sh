@@ -1,5 +1,5 @@
 minikube start
-minikube addons enable metrics-server
+minikube addons enable metrics-server ingress-dns ingress
 minikube dashboard &
 
 eval $(minikube docker-env)
