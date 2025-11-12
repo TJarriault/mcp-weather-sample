@@ -51,15 +51,174 @@ function loadCitiesFromStatic() {
     return cities;
 }
 // MCP Server
-function createMCPServer() {
+function getToolSpecificHelp(toolName) {
+    switch (toolName) {
+        case 'search_location':
+            return `🔍 **search_location** - GPS coordinates search using Open-Meteo API
+
+**Description:**
+Find GPS coordinates, timezone, population, and elevation data for cities worldwide.
+
+**Parameters:**
+• city_name (required): Name of city/location to search
+• country (optional): Country name to narrow search  
+• limit (optional): Max results (1-10, default: 5)
+
+**Examples:**
+\`\`\`json
+{ "city_name": "Paris" }
+{ "city_name": "Paris", "country": "France" }
+{ "city_name": "Springfield", "limit": 3 }
+{ "city_name": "San Francisco", "country": "United States", "limit": 5 }
+\`\`\`
+
+**Response includes:**
+• Name, country, administrative division
+• Latitude/longitude coordinates
+• Timezone information  
+• Population (if available)
+• Elevation above sea level
+
+**Use cases:**
+• Get coordinates for weather API calls
+• Find timezone information
+• Discover cities with similar names
+• Geographic data lookup`;
+        case 'search_local_cities':
+            return `🏙️ **search_local_cities** - French cities local database search
+
+**Description:**
+Search through local CSV database of French cities with detailed information.
+
+**Parameters:**
+• city_name (required): City name to search for
+• exact_match (optional): true for exact match, false for partial (default: false)
+• limit (optional): Max results (1-50, default: 10)
+
+**Examples:**
+\`\`\`json
+{ "city_name": "Lyon" }
+{ "city_name": "Saint", "limit": 20 }
+{ "city_name": "Marseille", "exact_match": true }
+{ "city_name": "Mont", "exact_match": false, "limit": 15 }
+\`\`\`
+
+**Search behavior:**
+• Case-insensitive matching
+• Partial matching finds cities containing the search term
+• Exact matching finds cities with the exact name
+
+**Use cases:**
+• Find French cities quickly without API calls
+• Discover cities with common prefixes
+• Get local data for French locations
+• Offline city lookup`;
+        case 'help':
+            return `❓ **help** - Get usage information and examples
+
+**Description:**
+Provides general help or specific tool documentation.
+
+**Parameters:**
+• tool_name (optional): Specific tool to get help for
+
+**Examples:**
+\`\`\`json
+{ }
+{ "tool_name": "search_location" }
+{ "tool_name": "search_local_cities" }
+\`\`\``;
+        default:
+            return null;
+    }
+}
+function createMcpServer() {
     const server = new McpServer({
-        name: 'weather-mcp-server',
-        version: '1.0.0',
-    }, {
-        capabilities: {
-            tools: {},
-            logging: {}
-        },
+        name: "weather-mcp-server",
+        version: "1.0.0"
+    });
+    // List all available tools with brief descriptions
+    server.tool('list_tools', 'List all available tools with their descriptions and basic usage', {}, async () => {
+        return {
+            content: [{
+                    type: 'text',
+                    text: `🛠️ Available Tools:
+
+1. **search_location** - Find GPS coordinates using Open-Meteo API
+   • Global city/location search
+   • Returns coordinates, timezone, population data
+
+2. **search_local_cities** - Search French cities in local database  
+   • Fast offline search
+   • Detailed French city information
+
+3. **help** - Get detailed help and examples
+   • General usage guide
+   • Tool-specific documentation
+
+4. **list_tools** - List all available tools (this tool)
+   • Quick overview of capabilities
+   • Brief descriptions
+
+💡 Use the 'help' tool with a specific tool_name for detailed examples and documentation.`
+                }]
+        };
+    });
+    server.tool('help', 'Get help and examples for using the weather MCP server tools', {
+        tool_name: z.string().optional().describe('Specific tool name to get detailed help for (optional - leave empty for general help)')
+    }, async ({ tool_name }) => {
+        if (tool_name) {
+            const toolHelp = getToolSpecificHelp(tool_name);
+            if (toolHelp) {
+                return {
+                    content: [{
+                            type: 'text',
+                            text: toolHelp
+                        }]
+                };
+            }
+            else {
+                return {
+                    content: [{
+                            type: 'text',
+                            text: `Tool '${tool_name}' not found. Available tools: search_location, search_local_cities, help`
+                        }]
+                };
+            }
+        }
+        return {
+            content: [{
+                    type: 'text',
+                    text: `🌤️ Weather MCP Server - Available Tools:
+
+🔍 **search_location** - Find GPS coordinates using Open-Meteo API
+   Examples:
+   • { "city_name": "Paris" }
+   • { "city_name": "New York", "country": "United States" }
+   • { "city_name": "London", "limit": 3 }
+
+🏙️ **search_local_cities** - Search French cities in local database
+   Examples:
+   • { "city_name": "Lyon" }
+   • { "city_name": "Saint", "limit": 20 }
+   • { "city_name": "Marseille", "exact_match": true }
+
+❓ **help** - Get this help information
+   Examples:
+   • { } - General help
+   • { "tool_name": "search_location" } - Specific tool help
+
+💡 **Tips:**
+   - Use partial matching for broader results
+   - Specify country for more accurate location searches
+   - Adjust limit parameter to control number of results
+   - All searches are case-insensitive
+
+🌍 **Data Sources:**
+   - Location search: Open-Meteo Geocoding API
+   - Local cities: French cities CSV database`
+                }]
+        };
     });
     // Tool to get weather data
     server.tool('get_weather', 'Get current weather information for a location', {
@@ -114,10 +273,16 @@ function createMCPServer() {
         };
     });
     // Tool to search for GPS position of a city
-    server.tool('search_location', 'Search for GPS coordinates of a city or location by name', {
-        city_name: z.string().describe('Name of the city or location to search for'),
-        country: z.string().optional().describe('Optional country name to narrow the search'),
-        limit: z.number().min(1).max(10).default(5).describe('Maximum number of results to return (default: 5)')
+    server.tool('search_location', `Search for GPS coordinates of a city or location by name using Open-Meteo geocoding API.
+    
+Examples:
+- Search for Paris: { "city_name": "Paris" }
+- Search for Paris in France specifically: { "city_name": "Paris", "country": "France" }
+- Get multiple results: { "city_name": "Springfield", "limit": 3 }
+- Search in a specific country: { "city_name": "London", "country": "United Kingdom", "limit": 5 }`, {
+        city_name: z.string().describe('Name of the city or location to search for (e.g., "Paris", "New York", "Tokyo")'),
+        country: z.string().optional().describe('Optional country name to narrow the search (e.g., "France", "United States", "Japan")'),
+        limit: z.number().min(1).max(10).default(5).describe('Maximum number of results to return (default: 5, max: 10)')
     }, async ({ city_name, country, limit }) => {
         try {
             // Build search URL with Open-Meteo geocoding API
@@ -137,32 +302,33 @@ function createMCPServer() {
                     content: [
                         {
                             type: 'text',
-                            text: `No location found for "${city_name}"${country ? ` in ${country}` : ''}`
+                            text: `No location found for "${city_name}"` + (country ? ` in ${country}` : '')
                         }
                     ]
                 };
             }
-            // Format results
-            const locations = results.map((result) => ({
-                name: result.name,
-                country: result.country,
-                admin1: result.admin1,
-                latitude: result.latitude,
-                longitude: result.longitude,
-                timezone: result.timezone,
-                population: result.population,
-                elevation: result.elevation
-            }));
+            // Format results with better presentation
+            const formattedResults = results.map((result, index) => `${index + 1}. **${result.name}** (${result.country})
+   📍 Coordinates: ${result.latitude}°, ${result.longitude}°
+   🌍 Admin: ${result.admin1 || 'N/A'}
+   ⏰ Timezone: ${result.timezone}
+   👥 Population: ${result.population ? result.population.toLocaleString() : 'N/A'}
+   🏔️ Elevation: ${result.elevation || 'N/A'}m`).join('\n\n');
+            const locationText = `🔍 Found ${results.length} location(s) for "${city_name}"` + (country ? ` in ${country}` : '') + ':';
             return {
                 content: [
                     {
                         type: 'text',
-                        text: JSON.stringify({
-                            query: city_name,
-                            country_filter: country,
-                            total_results: results.length,
-                            locations: locations
-                        }, null, 2)
+                        text: `${locationText}
+
+${formattedResults}
+
+📊 **Summary:**
+• Query: "${city_name}"
+• Country filter: ${country || 'None'}
+• Results: ${results.length}/${limit}
+
+💡 **Tip:** Use these coordinates with weather APIs or mapping services.`
                     }
                 ]
             };
@@ -180,10 +346,16 @@ function createMCPServer() {
         }
     });
     // Tool to search for cities in local CSV files
-    server.tool('search_local_cities', 'Search for cities in the local CSV files from the static directory', {
-        city_name: z.string().describe('Name of the city to search for (case insensitive partial match)'),
-        exact_match: z.boolean().default(false).describe('Whether to search for exact match or partial match (default: false)'),
-        limit: z.number().min(1).max(50).default(10).describe('Maximum number of results to return (default: 10)')
+    server.tool('search_local_cities', `Search for cities in the local CSV files from the static directory. Useful for finding French cities and their details.
+    
+Examples:
+- Find all cities containing "Paris": { "city_name": "Paris" }
+- Exact match for Lyon: { "city_name": "Lyon", "exact_match": true }
+- Get top 20 cities containing "Saint": { "city_name": "Saint", "limit": 20 }
+- Find cities starting with "Mar": { "city_name": "Mar", "exact_match": false, "limit": 15 }`, {
+        city_name: z.string().describe('Name of the city to search for (case insensitive partial match, e.g., "Paris", "Lyon", "Marseille")'),
+        exact_match: z.boolean().default(false).describe('Whether to search for exact match or partial match (default: false for partial matching)'),
+        limit: z.number().min(1).max(50).default(10).describe('Maximum number of results to return (default: 10, max: 50)')
     }, async ({ city_name, exact_match, limit }) => {
         try {
             const cities = loadCitiesFromStatic();
@@ -218,23 +390,29 @@ function createMCPServer() {
                     ]
                 };
             }
-            // Format results
-            const results = {
-                query: city_name,
-                exact_match: exact_match,
-                total_found: filteredCities.length,
-                results_returned: limitedResults.length,
-                cities: limitedResults.map(city => ({
-                    name: city.ville,
-                    latitude: city.latitude,
-                    longitude: city.longitude
-                }))
-            };
+            // Format results with better presentation
+            const formattedCities = limitedResults.map((city, index) => `${index + 1}. **${city.ville}**
+   📍 Coordinates: ${city.latitude}°, ${city.longitude}°`).join('\n\n');
+            const searchType = exact_match ? 'exact match' : 'partial match';
+            const totalFound = filteredCities.length;
+            const moreAvailable = totalFound > limitedResults.length;
+            const tipText = moreAvailable ? `💡 **Tip:** Increase the 'limit' parameter to see more results.` : '';
             return {
                 content: [
                     {
                         type: 'text',
-                        text: JSON.stringify(results, null, 2)
+                        text: `🏙️ Found ${totalFound} French cities (${searchType}) for "${city_name}":
+
+${formattedCities}
+
+📊 **Summary:**
+• Query: "${city_name}" 
+• Search mode: ${searchType}
+• Total found: ${totalFound}
+• Shown: ${limitedResults.length}${moreAvailable ? ` (${totalFound - limitedResults.length} more available)` : ''}
+• Data source: Local CSV files
+
+${tipText}`
                     }
                 ]
             };
@@ -290,7 +468,7 @@ app.all('/mcp', async (req, res) => {
                 }
             };
             // Connect MCP server
-            const mcpServer = createMCPServer();
+            const mcpServer = createMcpServer();
             await mcpServer.connect(transport);
         }
         else {

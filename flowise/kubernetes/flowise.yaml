@@ -1,0 +1,135 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flowise
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: flowise-secrets
+  namespace: flowise
+type: Opaque
+stringData:
+  # Renseignez ce dont vous avez besoin (ex: clés LLM)
+  OPENAI_API_KEY: "remplacez-moi-si-besoin"
+  # Optionnel: auth basique au niveau de l'app (si supporté/activé chez vous)
+  # BASIC_AUTH_USER: "admin"
+  # BASIC_AUTH_PASSWORD: "motdepasse-solide"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: flowise-data
+  namespace: flowise
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  # Laissez Kubernetes choisir la StorageClass par défaut
+  # storageClassName: standard
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flowise
+  namespace: flowise
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flowise
+  template:
+    metadata:
+      labels:
+        app: flowise
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: flowise
+          image: flowiseai/flowise:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: flowise-secrets
+          env:
+            - name: PORT
+              value: "3000"
+            # Place la base SQLite et les fichiers de l'app sur le PVC
+            - name: DATABASE_PATH
+              value: "/data/flowise.db"
+            # Selon vos besoins : répertoire de travail de Flowise
+            - name: FLOWISE_DIR
+              value: "/data"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: flowise-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flowise
+  namespace: flowise
+spec:
+  selector:
+    app: flowise
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+  type: "ClusterIP"
+---
+# Optionnel : exposez en Ingress (adapter l'IngressClass / annotations / host)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flowise
+  namespace: flowise
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    # Exemple TLS (si vous utilisez cert-manager)
+    # cert-manager.io/cluster-issuer: "letsencrypt"
+spec:
+  rules:
+    - host: flowise.votre-domaine.tld
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: flowise
+                port:
+                  number: 80
+  # tls:
+  #   - hosts:
+  #       - flowise.votre-domaine.tld
+  #     secretName: flowise-tls
+
