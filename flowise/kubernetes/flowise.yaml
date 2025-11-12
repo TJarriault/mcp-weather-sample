@@ -105,31 +105,3 @@ spec:
       port: 3000
       targetPort: 3000
   type: "ClusterIP"
----
-# Optionnel : exposez en Ingress (adapter l'IngressClass / annotations / host)
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: flowise
-  namespace: flowise
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
-    # Exemple TLS (si vous utilisez cert-manager)
-    # cert-manager.io/cluster-issuer: "letsencrypt"
-spec:
-  rules:
-    - host: flowise.votre-domaine.tld
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: flowise
-                port:
-                  number: 80
-  # tls:
-  #   - hosts:
-  #       - flowise.votre-domaine.tld
-  #     secretName: flowise-tls
-

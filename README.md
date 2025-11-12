@@ -36,6 +36,19 @@ A streamable HTTP MCP (Model Context Protocol) server for getting weather data v
 └── KUBERNETES_DEPLOYMENT.md     # Kubernetes deployment guide
 ```
 
+## 📦 Requirement
+
+
+```bash
+cd flowise/kubernetes
+MINIP=`minikube ip`
+sed -i "s/CHANGEME/$MINIP/g" ingress-flowise.yaml
+kubectl apply -f .
+```
+
+You need to import on flowise a new agent "Agentflows"
+
+
 ## 📦 Installation
 
 ```bash
